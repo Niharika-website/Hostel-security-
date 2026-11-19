@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hostel Security — Demo</title>
+<style>
+:root{--navy:#102b50;--navy2:#173d6b;--blue:#2866a0;--bg:#f2f5fa;--ink:#1d2939;--muted:#667085;--green:#21845b;--red:#b83b43;--amber:#a96812;--line:#e3e9f1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px Arial,Helvetica,sans-serif}
+header{background:linear-gradient(115deg,var(--navy),var(--navy2));color:#fff;padding:22px 18px}
+.head{max-width:1120px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-size:23px;font-weight:800;letter-spacing:.5px}.welcome{color:#d9e7f7;margin-top:7px;font-size:15px}.demo{font-size:12px;background:#ffffff20;border:1px solid #ffffff45;padding:7px 10px;border-radius:20px}
+main{max-width:1120px;margin:18px auto;padding:0 14px}.tabs{display:flex;gap:8px;overflow:auto;padding:4px 0 12px}.tabs button{white-space:nowrap;background:#e4ebf4;color:#183554}.tabs button.active{background:var(--navy);color:#fff}
+button{border:0;border-radius:9px;padding:10px 14px;background:var(--blue);color:white;font-weight:600;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}.secondary{background:#e7edf5;color:#183554}.danger{background:var(--red)}.success{background:var(--green)}
+.panel,.stat,.group-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 3px 12px #102b500b}
+.panel{padding:17px;margin-bottom:15px}.panel h2{margin:0 0 14px;color:var(--navy);font-size:19px}.panel h3{margin:0 0 9px;font-size:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:15px}.stat{padding:16px;cursor:pointer;border-top:4px solid var(--blue)}.stat:nth-child(2){border-top-color:var(--green)}.stat:nth-child(3){border-top-color:var(--red)}.stat .label{font-size:13px;color:var(--muted)}.stat strong{display:block;font-size:30px;margin-top:7px;color:var(--navy)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}.group-card{padding:13px;cursor:pointer}.group-card b{color:var(--navy)}.group-card strong{display:block;font-size:22px;margin-top:8px}
+label{display:block;font-size:13px;font-weight:700;color:#344054;margin:8px 0 5px}input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:#fff;margin-bottom:8px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}.muted{color:var(--muted);font-size:13px;line-height:1.5}.hidden{display:none!important}.pill{display:inline-block;border-radius:20px;padding:4px 9px;font-size:12px;font-weight:700}.inside{background:#e3f5eb;color:#176642}.outside{background:#fde9e9;color:#a32e36}.alert{border-left:4px solid var(--red);padding:10px 12px;margin:8px 0;background:#fff7f7;border-radius:8px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);font-size:13px}th{color:#667085} .tablewrap{overflow:auto}
+.student{border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0}.student b{color:var(--navy)}.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+#qrDisplay{overflow-wrap:anywhere}#studentQr{display:flex;justify-content:center;margin:4px auto 10px}#qrDisplay{overflow-wrap:anywhere}#studentQr{display:flex;justify-content:center;margin:4px auto 10px}footer{text-align:center;color:#667085;font-size:12px;padding:18px}
+@media(max-width:620px){.stats{gap:7px}.stat{padding:12px}.stat strong{font-size:25px}.stat .label{font-size:12px}.panel{padding:14px}.brand{font-size:20px}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><div class="brand">HOSTEL SECURITY</div><div class="welcome">Welcome, Warden Madam</div></div><div class="demo">INTERACTIVE DEMO</div></div></header>
+<main>
+<div class="stats">
+ <div class="stat" onclick="showTab('students','Inside')"><div class="label">TOTAL STRENGTH</div><strong id="total">6</strong></div>
+ <div class="stat" onclick="showTab('students','Inside')"><div class="label">INSIDE — tap to view</div><strong id="inside">4</strong></div>
+ <div class="stat" onclick="showTab('students','Outside')"><div class="label">OUTSIDE — tap to view</div><strong id="outside">2</strong></div>
+</div>
+<div class="tabs" id="tabs">
+ <button class="active" data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</button>
+ <button data-tab="scanner" onclick="showTab('scanner')">Barcode Scanner</button>
+ <button data-tab="students" onclick="showTab('students')">Students</button>
+ <button data-tab="groups" onclick="showTab('groups')">Groups</button>
+ <button data-tab="alerts" onclick="showTab('alerts')">Alert Details</button>
+ <button data-tab="search" onclick="showTab('search')">Search Details</button>
+ <button data-tab="logs" onclick="showTab('logs')">Gate Activity</button>
+ <button data-tab="add" onclick="showTab('add')">Add Student</button>
+</div>
+
+<section id="dashboard" class="panel page">
+ <h2>Warden Madam — Dashboard</h2>
+ <div class="row" style="align-items:start">
+  <div><h3>Group-wise Strength</h3><div id="groupCards" class="grid"></div></div>
+  <div><h3>Alert Details</h3><div id="dashboardAlerts"></div><button class="secondary" onclick="showTab('alerts')">View all alerts</button></div>
+ </div>
+ <p class="muted">Tap any group or count to view student details. This is a sample demo with editable local data.</p>
+</section>
+
+<section id="scanner" class="panel page hidden">
+ <h2>Barcode Scanner</h2>
+ <p class="muted">Tap Start Camera Scanner and point your phone camera at the student's QR / barcode. The student's details and gate buttons will appear here. Camera access requires HTTPS (or localhost) and permission.</p>
+ <div class="actions"><button onclick="startCameraScanner()">Start Camera Scanner</button><button class="secondary" onclick="stopCameraScanner()">Stop Scanner</button></div>
+ <div id="cameraBox" class="hidden" style="margin-top:12px"><video id="cameraVideo" playsinline autoplay muted style="width:100%;max-width:420px;border-radius:12px;background:#111"></video><p id="cameraStatus" class="muted">Point camera at the QR code.</p></div>
+ <label>Or enter Student SAN Number</label><input id="scanSan" placeholder="Example: 8008" autocomplete="off" onkeydown="if(event.key==='Enter')lookupStudent()">
+ <button onclick="lookupStudent()">Find Student</button><div id="scanResult"></div>
+ <div class="panel" style="margin-top:14px"><h3>Student QR Codes</h3><p class="muted">Choose a student to generate their personal QR ID. Google Lens direct-open works after the website is hosted online.</p><label>Select Student</label><select id="qrStudentSelect" onchange="makeSelectedQR()"><option value="">Select student</option></select><div id="qrDisplay" style="text-align:center"></div></div>
+</section>
+
+<section id="students" class="panel page hidden">
+ <h2 id="studentHeading">Student Details</h2><div id="studentList"></div>
+</section>
+<section id="groups" class="panel page hidden"><h2>Group-wise Student Details</h2><div id="groupList"></div></section>
+<section id="alerts" class="panel page hidden"><h2>Alert Details</h2><div id="alertList"></div><p class="muted">Students who are still Outside after their expected return date are listed here.</p></section>
+<section id="search" class="panel page hidden"><h2>Search Details</h2><label>Search by Student Name or SAN Number</label><input id="searchBox" placeholder="Type name or SAN number" oninput="renderSearch()"><div id="searchList"></div></section>
+<section id="logs" class="panel page hidden"><h2>Gate Activity</h2><div class="tablewrap" id="logList"></div></section>
+<section id="add" class="panel page hidden">
+ <h2>Add Student</h2><div class="row">
+ <div><label>Student Name</label><input id="addName" placeholder="Student name"></div>
+ <div><label>SAN Number</label><input id="addSan" placeholder="Unique SAN number"></div>
+ <div><label>Group</label><input id="addGroup" placeholder="MCA / CSE-A"></div>
+ <div><label>Room Number</label><input id="addRoom" placeholder="Room number"></div>
+ <div><label>Parent Mobile Number</label><input id="addParent" inputmode="numeric" placeholder="Parent mobile"></div>
+ </div><button onclick="addStudent()">Save Student</button>
+</section>
+<footer>Hostel Security demo · Sample data only · Changes stay in this browser session</footer>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+let students=[
+{id:1,name:"Pavithra",san:"8008",group:"MCA",room:"313",parent:"9876543210",status:"Inside",due:""},
+{id:2,name:"Akhila Reddy",san:"8009",group:"CSE-A",room:"101",parent:"9876543211",status:"Inside",due:""},
+{id:3,name:"Priya Sharma",san:"8010",group:"ECE-A",room:"205",parent:"9876543212",status:"Outside",due:"2026-11-12"},
+{id:4,name:"Sneha Reddy",san:"8011",group:"MCA",room:"315",parent:"9876543213",status:"Inside",due:""},
+{id:5,name:"Keerthana",san:"8012",group:"EEE-A",room:"302",parent:"9876543214",status:"Outside",due:"2026-11-16"},
+{id:6,name:"Divya Lakshmi",san:"8013",group:"CSE-A",room:"103",parent:"9876543215",status:"Inside",due:""}
+];
+let logs=[
+{time:"14 Nov 2026, 08:15 AM",name:"Priya Sharma",san:"8010",type:"OUTGOING",due:"12 Nov 2026"},
+{time:"14 Nov 2026, 09:05 AM",name:"Keerthana",san:"8012",type:"OUTGOING",due:"16 Nov 2026"},
+{time:"13 Nov 2026, 06:20 PM",name:"Akhila Reddy",san:"8009",type:"INCOMING",due:"—"}
+];
+let selectedGroup=null,filterStatus=null;
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function counts(){ $("total").textContent=students.length;$("inside").textContent=students.filter(s=>s.status==="Inside").length;$("outside").textContent=students.filter(s=>s.status==="Outside").length; }
+function showTab(tab,filter=null){
+ if(tab!=="scanner")stopCameraScanner();
+ document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));$(tab).classList.remove("hidden");
+ document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+ if(tab==="students"){filterStatus=filter;renderStudents()}
+ if(tab==="groups")renderGroups();if(tab==="alerts")renderAlerts();if(tab==="logs")renderLogs();if(tab==="dashboard")renderDashboard();
+}
+function studentCard(s){return `<div class="student"><b>${esc(s.name)}</b> <span class="pill ${s.status==="Inside"?"inside":"outside"}">${s.status}</span><p class="muted">SAN: ${esc(s.san)} · Group: ${esc(s.group)} · Room: ${esc(s.room)}<br>Parent Mobile: ${esc(s.parent)}${s.due?`<br>Expected Return: ${esc(s.due)}`:""}</p><div class="actions"><button class="secondary" onclick="showStudentQR('${esc(s.san)}')">Show Student QR</button></div></div>`}
+function renderDashboard(){
+ counts();let groups={};students.forEach(s=>groups[s.group]=(groups[s.group]||0)+1);
+ $("groupCards").innerHTML=Object.entries(groups).map(([g,n])=>`<div class="group-card" onclick="selectedGroup='${esc(g)}';showTab('groups')"><b>${esc(g)}</b><strong>${n} students</strong></div>`).join("");
+ let late=students.filter(s=>s.status==="Outside"&&s.due&&s.due<"2026-11-14");
+ $("dashboardAlerts").innerHTML=late.length?late.map(s=>`<div class="alert"><b>${esc(s.name)}</b><br><span class="muted">Return date passed · SAN ${esc(s.san)}</span></div>`).join(""):"<p class='muted'>No overdue students in this demo.</p>";
+}
+function renderStudents(){
+ $("studentHeading").textContent=filterStatus?filterStatus+" Students":"All Student Details";
+ let arr=students.filter(s=>!filterStatus||s.status===filterStatus);
+ $("studentList").innerHTML=arr.length?arr.map(studentCard).join(""):"<p class='muted'>No students in this list.</p>";
+}
+function renderGroups(){
+ let groups={};students.forEach(s=>(groups[s.group]??=[]).push(s));
+ $("groupList").innerHTML=Object.entries(groups).map(([g,a])=>`<div class="panel"><h3>${esc(g)} — ${a.length} students</h3>${a.map(studentCard).join("")}</div>`).join("");
+}
+function renderAlerts(){
+ let late=students.filter(s=>s.status==="Outside"&&s.due&&s.due<"2026-11-14");
+ $("alertList").innerHTML=late.length?late.map(s=>`<div class="alert">${studentCard(s)}<b class="pill outside">RETURN DATE PASSED</b></div>`).join(""):"<p class='muted'>No overdue students.</p>";
+}
+function renderSearch(){
+ let q=$("searchBox").value.trim().toLowerCase(),arr=students.filter(s=>s.name.toLowerCase().includes(q)||s.san.toLowerCase().includes(q));
+ $("searchList").innerHTML=q?(arr.length?arr.map(studentCard).join(""):"<p class='muted'>No matching student.</p>"):"";
+}
+function renderLogs(){
+ $("logList").innerHTML=logs.length?`<table><tr><th>Date / Time</th><th>Student</th><th>SAN</th><th>Movement</th><th>Return Date</th></tr>${logs.map(l=>`<tr><td>${esc(l.time)}</td><td>${esc(l.name)}</td><td>${esc(l.san)}</td><td>${esc(l.type)}</td><td>${esc(l.due)}</td></tr>`).join("")}</table>`:"No gate activity yet.";
+}
+function studentLink(san){
+  const url=new URL(location.href);
+  url.search="";
+  url.hash="";
+  url.searchParams.set("student",san);
+  return url.toString();
+}
+function fillQRStudentSelect(){
+  const sel=$("qrStudentSelect");
+  if(!sel)return;
+  const current=sel.value;
+  sel.innerHTML='<option value="">Select student</option>'+students.map(s=>`<option value="${esc(s.san)}">${esc(s.name)} — ${esc(s.san)}</option>`).join("");
+  if(students.some(s=>s.san===current))sel.value=current;
+}
+function showStudentQR(san){
+  showTab("scanner");
+  fillQRStudentSelect();
+  $("qrStudentSelect").value=san;
+  makeSelectedQR();
+}
+function makeSelectedQR(){
+  const san=$("qrStudentSelect").value;
+  const target=$("qrDisplay");
+  target.innerHTML="";
+  if(!san)return;
+  const s=students.find(x=>x.san===san);
+  if(!s)return;
+  if(location.protocol==="file:"){
+    target.innerHTML=`<p class="alert">To make Google Lens open student details automatically, first host this HTML website online. QR link cannot work as a public link while this file is opened directly from phone storage.</p><p class="muted">Student: ${esc(s.name)} · SAN: ${esc(s.san)}</p>`;
+    return;
+  }
+  const link=studentLink(san);
+  target.innerHTML=`<div style="display:inline-block;background:#fff;padding:12px;border:1px solid var(--line);border-radius:12px;margin:10px"><div id="studentQr"></div><b>${esc(s.name)}</b><p class="muted">SAN: ${esc(s.san)}</p><p class="muted">Scan with Google Lens / QR Scanner</p><button class="secondary" onclick="copyStudentLink('${esc(s.san)}')">Copy Student Link</button></div>`;
+  if(window.QRCode){new QRCode($("studentQr"),{text:link,width:190,height:190,correctLevel:QRCode.CorrectLevel.M});}
+  else $("studentQr").textContent=link;
+}
+function copyStudentLink(san){
+  const link=studentLink(san);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(link).then(()=>alert("Student link copied."));
+  else prompt("Copy this student link:",link);
+}
+let cameraStream=null,cameraDetector=null,cameraActive=false,cameraBusy=false;
+async function startCameraScanner(){
+ const box=$("cameraBox"),video=$("cameraVideo"),status=$("cameraStatus");
+ box.classList.remove("hidden");
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+  status.textContent="Camera is unavailable in this browser. Open this page in Chrome using HTTPS, or enter the SAN number manually.";return;
+ }
+ if(!("BarcodeDetector" in window)){
+  status.textContent="This browser does not support built-in QR scanning. Please use the latest Google Chrome on Android, or enter the SAN number manually.";return;
+ }
+ try{
+  cameraDetector=new BarcodeDetector({formats:["qr_code","code_128","code_39","ean_13","ean_8"]});
+  cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+  video.srcObject=cameraStream;await video.play();cameraActive=true;status.textContent="Camera ready — hold the QR code steady inside the camera view.";
+  scanCameraFrame();
+ }catch(err){
+  status.textContent=err.name==="NotAllowedError"?"Camera permission was denied. Allow camera access in Chrome site settings and try again.":"Could not open camera. Use HTTPS, allow camera permission, and close other camera apps.";
+ }
+}
+async function scanCameraFrame(){
+ if(!cameraActive||cameraBusy)return;
+ const video=$("cameraVideo");
+ if(video&&video.readyState>=2){
+  cameraBusy=true;
+  try{
+   const codes=await cameraDetector.detect(video);
+   if(codes&&codes.length){
+    const raw=(codes[0].rawValue||"").trim();
+    const san=studentSanFromCode(raw);
+    if(san){
+     $("scanSan").value=san;
+     stopCameraScanner();
+     $("cameraStatus").textContent="QR scanned successfully.";
+     lookupStudent();
+     return;
+    }
+    $("cameraStatus").textContent="QR scanned, but no matching student SAN was found.";
+   }
+  }catch(e){}
+  cameraBusy=false;
+ }
+ if(cameraActive)requestAnimationFrame(scanCameraFrame);
+}
+function studentSanFromCode(raw){
+ try{
+  if(/^https?:\/\//i.test(raw)){
+   const u=new URL(raw);
+   return u.searchParams.get("student")||u.searchParams.get("san")||"";
+  }
+ }catch(e){}
+ return raw.replace(/^SAN[:\\s-]*/i,"").trim();
+}
+function stopCameraScanner(){
+ cameraActive=false;
+ if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+ const video=$("cameraVideo");if(video)video.srcObject=null;
+}
+function lookupStudent(){
+ let san=$("scanSan").value.trim(),s=students.find(x=>x.san===san);
+ if(!s){$("scanResult").innerHTML="<p class='alert'>Student not found. Please check SAN number.</p>";return}
+ $("scanResult").innerHTML=`<div class="panel" style="margin-top:14px"><h3>${esc(s.name)}</h3><p class="muted">SAN: ${esc(s.san)} · Group: ${esc(s.group)} · Room: ${esc(s.room)}<br>Parent Mobile: ${esc(s.parent)}<br>Current Status: <b>${s.status}</b></p><label>Expected Return Date</label><input type="date" id="returnDate"><div class="actions"><button class="danger" onclick="moveStudent(${s.id},'OUTGOING')" ${s.status==="Outside"?"disabled":""}>OUTGOING</button><button class="success" onclick="moveStudent(${s.id},'INCOMING')" ${s.status==="Inside"?"disabled":""}>INCOMING</button></div></div>`;
+}
+function moveStudent(id,type){
+ let s=students.find(x=>x.id===id);if(!s)return;
+ if(type==="OUTGOING"){let due=$("returnDate").value;if(!due){alert("Please enter expected return date.");return}s.due=due;s.status="Outside"}
+ else{s.status="Inside";s.due=""}
+ logs.unshift({time:new Date().toLocaleString(),name:s.name,san:s.san,type,due:s.due||"—"});
+ $("scanResult").innerHTML=`<p class="pill ${s.status==="Inside"?"inside":"outside"}">${esc(s.name)} status updated to ${s.status}</p>`;
+ renderDashboard();
+}
+function addStudent(){
+ let name=$("addName").value.trim(),san=$("addSan").value.trim(),group=$("addGroup").value.trim(),room=$("addRoom").value.trim(),parent=$("addParent").value.trim();
+ if(!name||!san||!group){alert("Student Name, SAN Number and Group are required.");return}
+ if(students.some(s=>s.san===san)){alert("This SAN number already exists.");return}
+ students.push({id:Date.now(),name,san,group,room,parent,status:"Inside",due:""});
+ ["addName","addSan","addGroup","addRoom","addParent"].forEach(id=>$(id).value="");
+ renderDashboard();fillQRStudentSelect();alert("Student added to this demo session.");showTab("students");
+}
+window.addEventListener("pagehide",stopCameraScanner);
+renderDashboard();
+fillQRStudentSelect();
+const scannedSan=new URLSearchParams(location.search).get("student");
+if(scannedSan){showTab("scanner");$("scanSan").value=scannedSan;lookupStudent();}
+</script>
+</body></html>
