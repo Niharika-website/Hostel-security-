@@ -39,6 +39,8 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px
  <button data-tab="search" onclick="showTab('search')">Search Details</button>
  <button data-tab="logs" onclick="showTab('logs')">Gate Activity</button>
  <button data-tab="add" onclick="showTab('add')">Add Student</button>
+  <button class="secondary" type="button" onclick="document.getElementById('excelFile').click()">Import Excel File</button>
+  <input id="excelFile" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importStudentExcel(event)">
 </div>
 
 <section id="dashboard" class="panel page">
@@ -52,7 +54,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px
 
 <section id="scanner" class="panel page hidden">
  <h2>Barcode Scanner</h2>
- <p class="muted">Tap Start Camera Scanner and point your phone camera at the student's QR / barcode. The student's details and gate buttons will appear here. Camera access requires HTTPS (or localhost) and permission.</p>
+ <p class="muted">Tap Start Camera Scanner and allow camera access in Chrome. The camera stays active while you move between tabs in this demo. Tap Stop Scanner to turn it off. Camera access requires HTTPS (or localhost); Chrome controls the permission.</p>
  <div class="actions"><button onclick="startCameraScanner()">Start Camera Scanner</button><button class="secondary" onclick="stopCameraScanner()">Stop Scanner</button></div>
  <div id="cameraBox" class="hidden" style="margin-top:12px"><video id="cameraVideo" playsinline autoplay muted style="width:100%;max-width:420px;border-radius:12px;background:#111"></video><p id="cameraStatus" class="muted">Point camera at the QR code.</p></div>
  <label>Or enter Student SAN Number</label><input id="scanSan" placeholder="Example: 8008" autocomplete="off" onkeydown="if(event.key==='Enter')lookupStudent()">
@@ -78,6 +80,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px
 </section>
 <footer>Hostel Security demo · Sample data only · Changes stay in this browser session</footer>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 let students=[
@@ -98,7 +101,8 @@ function $(id){return document.getElementById(id)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function counts(){ $("total").textContent=students.length;$("inside").textContent=students.filter(s=>s.status==="Inside").length;$("outside").textContent=students.filter(s=>s.status==="Outside").length; }
 function showTab(tab,filter=null){
- if(tab!=="scanner")stopCameraScanner();
+ // Keep the camera stream active when moving between tabs inside this demo.
+ // The user can always stop it with the Stop Scanner button or by closing the page.
  document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));$(tab).classList.remove("hidden");
  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
  if(tab==="students"){filterStatus=filter;renderStudents()}
@@ -176,8 +180,12 @@ let cameraStream=null,cameraDetector=null,cameraActive=false,cameraBusy=false;
 async function startCameraScanner(){
  const box=$("cameraBox"),video=$("cameraVideo"),status=$("cameraStatus");
  box.classList.remove("hidden");
+ if(!window.isSecureContext || (location.protocol!=="https:" && location.hostname!=="localhost")){
+  status.textContent="This file is open from phone storage (content:// or file://). Camera access works only when you open the hosted HTTPS website in Chrome. Open your GitHub Pages https:// link, then tap Start Camera Scanner.";
+  return;
+ }
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-  status.textContent="Camera is unavailable in this browser. Open this page in Chrome using HTTPS, or enter the SAN number manually.";return;
+  status.textContent="Camera is unavailable in this browser. Open the HTTPS website in the latest Chrome, or enter the SAN number manually.";return;
  }
  if(!("BarcodeDetector" in window)){
   status.textContent="This browser does not support built-in QR scanning. Please use the latest Google Chrome on Android, or enter the SAN number manually.";return;
@@ -188,7 +196,15 @@ async function startCameraScanner(){
   video.srcObject=cameraStream;await video.play();cameraActive=true;status.textContent="Camera ready — hold the QR code steady inside the camera view.";
   scanCameraFrame();
  }catch(err){
-  status.textContent=err.name==="NotAllowedError"?"Camera permission was denied. Allow camera access in Chrome site settings and try again.":"Could not open camera. Use HTTPS, allow camera permission, and close other camera apps.";
+  if(err.name==="NotAllowedError" || err.name==="PermissionDeniedError"){
+   status.textContent="Chrome blocked camera access. Open the HTTPS website (not this downloaded file), tap the site icon beside the address, open Permissions / Site settings, set Camera to Allow, reload the page, then tap Start Camera Scanner.";
+  }else if(err.name==="NotFoundError"){
+   status.textContent="No camera was found on this device. Check that your phone camera is available.";
+  }else if(err.name==="NotReadableError"){
+   status.textContent="The camera may be in use by another app. Close other camera apps and try again.";
+  }else{
+   status.textContent="Could not open camera. Make sure this page is HTTPS, allow camera permission in Chrome, and try again.";
+  }
  }
 }
 async function scanCameraFrame(){
@@ -242,6 +258,47 @@ function moveStudent(id,type){
  $("scanResult").innerHTML=`<p class="pill ${s.status==="Inside"?"inside":"outside"}">${esc(s.name)} status updated to ${s.status}</p>`;
  renderDashboard();
 }
+
+function importStudentExcel(event){
+ const file=event.target.files&&event.target.files[0];
+ if(!file)return;
+ if(!window.XLSX){alert("Excel reader could not load. Please check your internet connection and reload the page.");event.target.value="";return}
+ const reader=new FileReader();
+ reader.onload=function(e){
+  try{
+   const workbook=XLSX.read(e.target.result,{type:"array"});
+   const sheet=workbook.Sheets[workbook.SheetNames[0]];
+   const rows=XLSX.utils.sheet_to_json(sheet,{defval:"",raw:false});
+   if(!rows.length){alert("The Excel sheet is empty.");return}
+   const norm=v=>String(v??"").trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+   const findKey=(row,aliases)=>Object.keys(row).find(k=>aliases.includes(norm(k)));
+   const first=rows[0];
+   const keys={
+    name:findKey(first,["studentname","name","fullname","nameofstudent"]),
+    san:findKey(first,["sannumber","san","studentid","studentnumber","id"]),
+    group:findKey(first,["group","class","course","department","section"]),
+    room:findKey(first,["roomnumber","room","roomno"]),
+    parent:findKey(first,["parentmobilenumber","parentmobile","parentphone","mobilenumber","phone"])
+   };
+   if(!keys.name||!keys.san||!keys.group){
+    alert("Excel headers not recognized. Required columns: Student Name, SAN Number, Group. Optional: Room Number, Parent Mobile Number.");return;
+   }
+   let added=0,skipped=0;
+   rows.forEach(row=>{
+    const name=String(row[keys.name]??"").trim(),san=String(row[keys.san]??"").trim(),group=String(row[keys.group]??"").trim();
+    if(!name||!san||!group||students.some(st=>String(st.san)===san)){skipped++;return}
+    students.push({id:Date.now()+added,name,san,group,room:keys.room?String(row[keys.room]??"").trim():"",parent:keys.parent?String(row[keys.parent]??"").trim():"",status:"Inside",due:""});
+    added++;
+   });
+   renderDashboard();fillQRStudentSelect();showTab("students");
+   alert("Excel import completed. Added: "+added+(skipped?" · Skipped empty/duplicate rows: "+skipped:""));
+  }catch(err){alert("Could not read this Excel file. Please use .xlsx, .xls, or .csv format.");}
+  finally{event.target.value="";}
+ };
+ reader.onerror=function(){alert("Unable to read the selected file.");event.target.value="";};
+ reader.readAsArrayBuffer(file);
+}
+
 function addStudent(){
  let name=$("addName").value.trim(),san=$("addSan").value.trim(),group=$("addGroup").value.trim(),room=$("addRoom").value.trim(),parent=$("addParent").value.trim();
  if(!name||!san||!group){alert("Student Name, SAN Number and Group are required.");return}
